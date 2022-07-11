@@ -1,0 +1,13 @@
+[package]
+name = "mc-msa-auth"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+reqwest = { version = "0.11.11", features = ["blocking"] }
+urlencoding = "2.1.0"
+anyhow = "1.0.58"
+serde = { version = "1.0.138", features = ["derive"] }
+serde_json = "1.0.82"
