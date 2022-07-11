@@ -1,13 +1,13 @@
+use anyhow::anyhow;
 use anyhow::Error;
+use anyhow::Result;
 use reqwest::header::HeaderValue;
 use serde::Deserialize;
 use serde::Serialize;
-use urlencoding::encode;
 use std::io::Read;
 use std::net::TcpListener;
 use std::time::Duration;
-use anyhow::Result;
-use anyhow::anyhow;
+use urlencoding::encode;
 
 fn main() {
     println!("Hello, world!");
@@ -37,12 +37,12 @@ impl TokenResponse {}
 
 #[derive(Deserialize, Debug)]
 struct Uhs {
-    uhs: String
+    uhs: String,
 }
 
 #[derive(Deserialize, Debug)]
 struct DisplayClaims {
-    xui: Vec<Uhs>
+    xui: Vec<Uhs>,
 }
 
 #[derive(Deserialize, Debug)]
@@ -177,16 +177,16 @@ struct MCProfileResponse {
     id: String,
     name: String,
     skins: Vec<Skin>,
-    capes: Vec<Cape>
+    capes: Vec<Cape>,
 }
 
-
-impl <'a>MicrosoftAuth<'a> {
+impl<'a> MicrosoftAuth<'a> {
     const SCOPE: &'static str = "XboxLive.signin offline_access";
     const TOKEN_URL: &'static str = "https://login.live.com/oauth20_token.srf";
     const AUTH_URL: &'static str = "https://user.auth.xboxlive.com/user/authenticate";
     const XSTS_AUTH: &'static str = "https://xsts.auth.xboxlive.com/xsts/authorize";
-    const MC_TOKEN_URL: &'static str = "https://api.minecraftservices.com/authentication/login_with_xbox";
+    const MC_TOKEN_URL: &'static str =
+        "https://api.minecraftservices.com/authentication/login_with_xbox";
     const PROFILE_URL: &'static str = "https://api.minecraftservices.com/minecraft/profile";
 
     pub fn new(app_id: &'a str, app_secret: &'a str, redirect_url: &'a str) -> Self {
@@ -214,7 +214,10 @@ impl <'a>MicrosoftAuth<'a> {
                 stream.read_to_end(&mut buf)?;
                 // add more verification to this
                 let response = String::from_utf8_lossy(&buf).to_string();
-                let code = response.split("?code=").collect::<Vec<&str>>()[1].split(' ').collect::<Vec<&str>>()[0].to_string();
+                let code = response.split("?code=").collect::<Vec<&str>>()[1]
+                    .split(' ')
+                    .collect::<Vec<&str>>()[0]
+                    .to_string();
                 self.auth_code = Some(code.to_owned());
                 return Ok(code);
             }
@@ -231,39 +234,86 @@ impl <'a>MicrosoftAuth<'a> {
         let client = reqwest::blocking::Client::new();
         let mut buffer = String::new();
         // add timeout and add safety
-        let _ = client.post(Self::AUTH_URL).header("Content-Type", "application/json").header("Accept", "application/json").body(body).timeout(Duration::from_millis(500)).send().unwrap().read_to_string(&mut buffer);
+        let _ = client
+            .post(Self::AUTH_URL)
+            .header("Content-Type", "application/json")
+            .header("Accept", "application/json")
+            .body(body)
+            .timeout(Duration::from_millis(500))
+            .send()
+            .unwrap()
+            .read_to_string(&mut buffer);
         println!("{}", buffer);
         let xbl_res: XBLResponse = serde_json::from_str(&buffer).expect("invalid xbl res");
         println!("{:?}", xbl_res);
         // authXSTS
         let mut buffer = String::new();
         let body = serde_json::to_string(&XSTSRequestBody::new(&xbl_res.Token)).unwrap();
-        let _ = client.post(Self::XSTS_AUTH).header("Content-Type", "application/json").header("Accept", "application/json").body(body).timeout(Duration::from_millis(500)).send().unwrap().read_to_string(&mut buffer);
+        let _ = client
+            .post(Self::XSTS_AUTH)
+            .header("Content-Type", "application/json")
+            .header("Accept", "application/json")
+            .body(body)
+            .timeout(Duration::from_millis(500))
+            .send()
+            .unwrap()
+            .read_to_string(&mut buffer);
         println!("{}", buffer);
         let xsts_res: XSTSResponse = serde_json::from_str(&buffer).expect("invalid xsts");
         println!("{:?}", xsts_res);
         // getMinecraftToken
         // todo add safety check
         let mut buffer = String::new();
-        let body = format!("{{\"identityToken\":\"XBL3.0 x={};{}\"}}", xbl_res.DisplayClaims.xui[0].uhs, xsts_res.Token);
-        let _ = client.post(Self::MC_TOKEN_URL).header("Content-Type", "application/json").header("Accept", "application/json").body(body).timeout(Duration::from_millis(500)).send().unwrap().read_to_string(&mut buffer);
+        let body = format!(
+            "{{\"identityToken\":\"XBL3.0 x={};{}\"}}",
+            xbl_res.DisplayClaims.xui[0].uhs, xsts_res.Token
+        );
+        let _ = client
+            .post(Self::MC_TOKEN_URL)
+            .header("Content-Type", "application/json")
+            .header("Accept", "application/json")
+            .body(body)
+            .timeout(Duration::from_millis(500))
+            .send()
+            .unwrap()
+            .read_to_string(&mut buffer);
         println!("{}", buffer);
-        let mc_token: MCTokenResponse = serde_json::from_str(&buffer).expect("invalid token resposen");
+        let mc_token: MCTokenResponse =
+            serde_json::from_str(&buffer).expect("invalid token resposen");
         let mut buffer = String::new();
-        let _ = client.get(Self::PROFILE_URL).header("Authorization", &format!("Bearer {}", mc_token.access_token)).timeout(Duration::from_millis(500)).send().unwrap().read_to_string(&mut buffer);
+        let _ = client
+            .get(Self::PROFILE_URL)
+            .header(
+                "Authorization",
+                &format!("Bearer {}", mc_token.access_token),
+            )
+            .timeout(Duration::from_millis(500))
+            .send()
+            .unwrap()
+            .read_to_string(&mut buffer);
         println!("{}", buffer);
-        let mc_profile: MCProfileResponse = serde_json::from_str(&buffer).expect("invalid mc profile response");
+        let mc_profile: MCProfileResponse =
+            serde_json::from_str(&buffer).expect("invalid mc profile response");
         println!("{:?}", mc_profile);
         Ok(())
     }
 
-
     // add timeout in header
     fn get_token(&mut self, auth_code: String) -> Result<TokenResponse, Error> {
-        let body = format!("client_id={}&client_secret={}&code={}&grant_type=authorization_code&redirect_uri={}", self.compiled_id, self.compiled_secret, auth_code, self.compiled_url);
+        let body = format!(
+            "client_id={}&client_secret={}&code={}&grant_type=authorization_code&redirect_uri={}",
+            self.compiled_id, self.compiled_secret, auth_code, self.compiled_url
+        );
         let client = reqwest::blocking::Client::new();
         let mut buffer = String::new();
-        let _ = client.post(Self::TOKEN_URL).header("Content-Type", "application/x-www-form-urlencoded").body(body).timeout(Duration::from_millis(500)).send().unwrap().read_to_string(&mut buffer)?;
+        let _ = client
+            .post(Self::TOKEN_URL)
+            .header("Content-Type", "application/x-www-form-urlencoded")
+            .body(body)
+            .timeout(Duration::from_millis(500))
+            .send()
+            .unwrap()
+            .read_to_string(&mut buffer)?;
         // need more safety checks here
         println!("{}", buffer);
         let token_response: TokenResponse = serde_json::from_str(&buffer).unwrap();
