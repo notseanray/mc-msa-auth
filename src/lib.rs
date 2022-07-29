@@ -1,7 +1,5 @@
-use anyhow::anyhow;
 use anyhow::Error;
 use anyhow::Result;
-use reqwest::header::HeaderValue;
 use serde::Deserialize;
 use serde::Serialize;
 use std::io::Read;
@@ -9,16 +7,8 @@ use std::net::TcpListener;
 use std::time::Duration;
 use urlencoding::encode;
 
-fn main() {
-    println!("Hello, world!");
-    let mut auth = MicrosoftAuth::new();
-    println!("{}", auth.create_url());
-    let code = auth.listen_for_code(8080).unwrap();
-    auth.auth_flow();
-}
-
 #[derive(Deserialize, Debug)]
-struct TokenResponse {
+pub struct TokenResponse {
     token_type: String,
     expires_in: u64,
     scope: String,
@@ -36,18 +26,18 @@ struct TokenResponse {
 impl TokenResponse {}
 
 #[derive(Deserialize, Debug)]
-struct Uhs {
+pub struct Uhs {
     uhs: String,
 }
 
 #[derive(Deserialize, Debug)]
-struct DisplayClaims {
+pub struct DisplayClaims {
     xui: Vec<Uhs>,
 }
 
 #[derive(Deserialize, Debug)]
 #[allow(non_snake_case, dead_code)]
-struct XBLResponse {
+pub struct XBLResponse {
     IssueInstant: String,
     NotAfter: String,
     Token: String,
@@ -69,7 +59,7 @@ pub struct MicrosoftAuth<'a> {
 
 #[derive(Serialize, Debug)]
 #[allow(non_snake_case)]
-struct XBLRequestProperties {
+pub struct XBLRequestProperties {
     AuthMethod: String,
     SiteName: String,
     RpsTicket: String,
@@ -105,7 +95,7 @@ impl XBLRequestBody {
 
 #[derive(Deserialize, Debug)]
 #[allow(non_snake_case)]
-struct XSTSResponse {
+pub struct XSTSResponse {
     IssueInstant: String,
     NotAfter: String,
     Token: String,
@@ -114,7 +104,7 @@ struct XSTSResponse {
 
 #[derive(Serialize, Debug)]
 #[allow(non_snake_case)]
-struct XSTSRequestProperties {
+pub struct XSTSRequestProperties {
     SandboxId: String,
     UserTokens: Vec<String>,
 }
@@ -130,7 +120,7 @@ impl XSTSRequestProperties {
 
 #[derive(Serialize, Debug)]
 #[allow(non_snake_case)]
-struct XSTSRequestBody {
+pub struct XSTSRequestBody {
     Properties: XSTSRequestProperties,
     RelyingParty: String,
     TokenType: String,
@@ -147,7 +137,7 @@ impl XSTSRequestBody {
 }
 
 #[derive(Deserialize, Debug)]
-struct MCTokenResponse {
+pub struct MCTokenResponse {
     username: String,
     roles: Vec<String>,
     access_token: String,
@@ -156,7 +146,7 @@ struct MCTokenResponse {
 }
 
 #[derive(Deserialize, Debug)]
-struct Skin {
+pub struct Skin {
     id: String,
     state: String,
     url: String,
@@ -165,7 +155,7 @@ struct Skin {
 }
 
 #[derive(Deserialize, Debug)]
-struct Cape {
+pub struct Cape {
     id: String,
     state: String,
     url: String,
@@ -173,7 +163,7 @@ struct Cape {
 }
 
 #[derive(Deserialize, Debug)]
-struct MCProfileResponse {
+pub struct MCProfileResponse {
     id: String,
     name: String,
     skins: Vec<Skin>,

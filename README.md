@@ -1,8 +1,10 @@
 # mc-msa-auth
-This is a way to authenticate with microsoft to get a minecraft token. This can be used for make custom clients, both headless or full clients. This project is made in rust, and is made for rust. 
+This is a way to authenticate with microsoft to get a minecraft token. This can be used for make custom clients, both headless or full clients. This project is made in rust, and is made for rust.
+
+HEAVY WORK IN PROGRESS, NOT PRODUCTION READY
 
 ## Example
-This is an example of how you can get a minecraft token from the login method.
+This is an example of how you can get a minecraft token from the login method. You must register a client id + client secret first.
 
 ``` rust
 use mc-msa-auth::MicrosoftAuth;
@@ -11,10 +13,10 @@ fn main(){
     let mut auth = MicrosoftAuth::new("CLIENT ID", "CLIENT SECRET", "http://localhost:{PORT}/token");
     println!("URL: {}", auth.create_url())
     let code = auth.listen_for_code(8080).unwrap();
-    let token = auth.get_token(code);
-    println!("Code: {}", token);
+    auth.auth_flow();
 }
 ```
+or `cargo run --example main`
 
 ## Azure token
 To get the the `client id` and the `client secret value` you can follow this step by step list.
